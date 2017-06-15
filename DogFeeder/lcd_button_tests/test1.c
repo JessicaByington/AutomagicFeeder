@@ -14,6 +14,10 @@ const int button_up = 13;     // the number of the pushbutton pin
 const int button_down = 10;     // the number of the pushbutton pin
 const int button_select = 9;     // the number of the pushbutton pin
 
+//Variables for reading the pushbutton status
+int lastButtonState_up = LOW;
+int lastButtonState_down = LOW;
+int lastButtonState_select = LOW;
 
 //Text for main menu screen
 const char * main_menu [] = {"Time", "Options", "Back"};
@@ -27,8 +31,16 @@ int rows = 2;
 //Number of cols that can fit on the LCD screen
 int cols = 13;
 
+//character for showing the current menu item selected
 const char * selected = "X";
+//character for clearing the previously selected 
 const char * unselected = " ";
+//the last time the output pin was toggled
+unsigned long lastDebounceTime_up = 0;
+unsigned long lastDebounceTime_down = 0;
+unsigned long lastDebounceTime_select = 0;
+//the debounce time; increase if the output flickers
+unsigned long debounceDelay = 50; 
 
 int main (void)
 {
@@ -66,6 +78,85 @@ void control_loop (const char * menu[])
     lcd.setCursor(0,cursor_pos);
     lcd.print(selected);
     
+	while (1)
+	{
+		int reading_up = digitalRead(button_up);
+		int reading_down = digitalRead(button_down);
+        int reading_select = digitalRead(button_select);
+        
+		if(reading_up != lastButtonState_up)
+		{
+			lastDebounceTime_up = millis();
+		}
+		        
+		if(reading_down != lastButtonState_down)
+		{
+			lastDebounceTime_down = millis();
+		}
+                
+		if(reading_select != lastButtonState_select)
+		{
+			lastDebounceTime_select = millis();
+		}
+        
+		if ((millis() - lastDebounceTime_up) > debounceDelay)
+		{
+            //whatever the reading is at, it's been there for longer
+            //than the debounce delay, so take it as the acutal current state
+            if (reading_up == HIGH)
+            {
+                lcd.setCursor(0,cursor_pos);
+                lcd.print(selected);
+              
+                lcd.setCursor(0,cursor_pos + 1);
+                lcd.print(unselected);
+            }
+            
+		}
+		
+        if ((millis() - lastDebounceTime_down) > debounceDelay)
+		{
+            //whatever the reading is at, it's been there for longer
+            //than the debounce delay, so take it as the acutal current state
+            if (reading_down == HIGH)
+            {
+                // from top to next
+                // keep at bottom
+                // until last element in the menu has been reached
+                // then make the second to last element the top
+                // and when down is pressed, make it bottom. 
+
+                cursor_pos = cursor_pos + 1;
+
+                if (cursor_pos == 1)
+                {
+                  lcd.setCursor(0, cursor_pos - 1);
+                  lcd.print(unselected);
+
+                  lcd.setCursor(0, cursor_pos);
+                  lcd.print(selected); 
+                }   
+                else
+                {
+                  display_text(menu, 1);
+                  cursor_pos = 0;
+
+                  lcd.setCursor(0, cursor_pos);
+                  lcd.print(selected);
+
+                  lcd.setCursor(0, cursor_pos + 1);
+                  lcd.print(unselected);            
+                }
+            }
+            
+		}
+        
+        lastButtonState_down = reading_down;
+        lastButtonState_up = reading_up;
+        lastButtonState_select = reading_select;
+	};
+	
+	/*
     while (1)
     {
         reading_up = digitalRead(button_up);
@@ -83,13 +174,12 @@ void control_loop (const char * menu[])
         
         if (reading_down == HIGH)
         {
-          /*
-           * from top to next
-           * keep at bottom
-           * until last element in the menu has been reached
-           * then make the second to last element the top
-           * and when down is pressed, make it bottom. 
-          */
+           // from top to next
+           // keep at bottom
+           // until last element in the menu has been reached
+           // then make the second to last element the top
+           // and when down is pressed, make it bottom. 
+          
             cursor_pos = cursor_pos + 1;
             
             if (cursor_pos == 1)
@@ -112,7 +202,7 @@ void control_loop (const char * menu[])
               lcd.print(unselected);            
             }
         }
-    };
+    }; */
 }
 
 void display_text(const char * text[], int array_pos)
