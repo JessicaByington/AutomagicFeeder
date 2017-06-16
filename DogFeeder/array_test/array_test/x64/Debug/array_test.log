@@ -1,13 +1,12 @@
 ﻿  Source.c
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(33): warning C4047: 'function': 'char **' differs in levels of indirection from 'char *'
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(33): warning C4024: 'display_text': different types for formal and actual parameter 1
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(52): warning C4047: 'function': 'char **' differs in levels of indirection from 'char *'
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(52): warning C4024: 'display_text': different types for formal and actual parameter 1
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(61): warning C4047: 'function': 'char **' differs in levels of indirection from 'char *'
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(61): warning C4024: 'display_text': different types for formal and actual parameter 1
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(28): warning C4047: 'initializing': 'char *' differs in levels of indirection from 'char **'
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(29): warning C4047: 'initializing': 'int' differs in levels of indirection from 'char **'
-c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(43): warning C4996: 'scanf': This function or variable may be unsafe. Consider using scanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(92): warning C4047: 'function': 'char **' differs in levels of indirection from 'char *'
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(92): warning C4024: 'display_text': different types for formal and actual parameter 1
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(111): warning C4047: 'function': 'char **' differs in levels of indirection from 'char *'
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(111): warning C4024: 'display_text': different types for formal and actual parameter 1
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(120): warning C4047: 'function': 'char **' differs in levels of indirection from 'char *'
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(120): warning C4024: 'display_text': different types for formal and actual parameter 1
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(87): warning C4047: 'initializing': 'char *' differs in levels of indirection from 'char **'
+c:\users\jessica\documents\github\automagicfeeder\dogfeeder\array_test\array_test\source.c(102): warning C4996: 'scanf': This function or variable may be unsafe. Consider using scanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.15063.0\ucrt\stdio.h(1272): note: see declaration of 'scanf'
   array_test.vcxproj -> C:\Users\Jessica\Documents\GitHub\AutomagicFeeder\DogFeeder\array_test\x64\Debug\array_test.exe
   array_test.vcxproj -> C:\Users\Jessica\Documents\GitHub\AutomagicFeeder\DogFeeder\array_test\x64\Debug\array_test.pdb (Partial PDB)
