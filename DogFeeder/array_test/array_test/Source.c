@@ -1,24 +1,36 @@
 #include <stdio.h>
 
-//Text for main menu screen
-const char * main_menu[] = { "Time", "Options", "Back" };
+//template struct for all menus
+typedef struct
+{
+	int size;
+	char * menu[];
+} Menu;
 
-void control_loop(char * menu[]);
-void display_text(char * text[], int, int);
+//Text for main menu screen
+Menu main_menu = {.size = 3, .menu = { "Time", "Options", "Back" }};
+
+//Test menu for testing larger menus
+Menu test_menu = {.size = 7, .menu = {"one", "two", "three", "four", "five", "six", "seven"}};
+
+void control_loop(struct Menu menu_struct);
+void display_text(char * text[], int, int, int);
 
 int rows = 2;
 
 int main(void)
 {
-	char * main_menu[] = { "Time", "Options", "Back" };
-	control_loop(main_menu);
+	control_loop(test_menu);
 }
 
-void control_loop(char * menu[])
+void control_loop(struct Menu menu_struct)
 {
+	char * menu = menu_struct.menu;
+	int menu_size = menu_struct.menu;
+
 	char input = ' ';
 
-	display_text(menu, 0, 0);
+	display_text(menu, 0, 0, menu_size);
 
 	int selection = 0;
 
@@ -33,35 +45,33 @@ void control_loop(char * menu[])
 
 		if (input == 'd')
 		{
-			if ((selection >= 0) && (selection < 2))
+			if ((selection >= 0) && (selection < (menu_size - 1)))
 				selection++;
 
 			int loc = selection;
-			display_text(menu, selection, loc);
+			display_text(menu, selection, loc, menu_size);
 		}
 
 		if (input == 'u')
 		{
-			if ((selection > 0) && (selection <= 3))
+			if ((selection > 0) && (selection <= menu_size))
 				selection--;
 
 			int loc = selection;
-			display_text(menu, selection, loc);
+			display_text(menu, selection, loc, menu_size);
 		}
 	};
 }
 
-void display_text(char * text[], int selection, int loc)
+void display_text(char * text[], int selection, int loc, int menu_size)
 {
 	int index = 0;
 	int i = 0;
 	int row = rows;
 
-	//int num_of_elem = (sizeof(text) / sizeof(*text));
-
 	if (selection > (rows - 1)) 
 	{
-		if (selection <= (3 - 1))
+		if (selection <= (menu_size - 1))
 		{
 			index = loc - 1;
 			i = loc - 1;
