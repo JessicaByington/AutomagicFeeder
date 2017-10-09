@@ -9,29 +9,45 @@ Array to hold cursor location
 typedef struct
 {
 	int size;
-	char * menu[2];
+	char time[5];
+	char options[8];
 } Main_Menu;
+Main_Menu main_menu;
 
 //struct for option menus
 typedef struct
 {
 	int size;
-	char * menu[5];
+	char feed_amount [13];
+	char feed_time [11];
+	char system_time [13];
+	char test [5];
+	char back [5];
 } Option_Menu;
+Option_Menu option_menu;
 
 //struct for feed amount
 typedef struct
 {
 	int size;
-	char * menu[4];
+	char current [10];
+	char increase [10];
+	char decrease [10];
+	char back [5];
 } Feed_Amount_Menu;
+Feed_Amount_Menu feed_amount_menu;
 
 //struct for time, will be used for changing feed and system time
 typedef struct
 {
 	int size;
-	char * menu[5];
+	char current [10];
+	char hour [5];
+	char minute [8];
+	char ampm [7];
+	char back [5];
 } Time_Menu;
+Time_Menu time_menu;
 
 //struct for time, will be used for changing feed and system time
 typedef struct
@@ -40,13 +56,15 @@ typedef struct
 	int hour_size;
 	int minute_size;
 	int period_size;
-	char * hour[13];
-	char * minute[12];
-	char * period[2];
+	int hour[13];
+	int minute[12];
+	char am[3];
+	char pm[3];
 } Time_Change_Menu;
+Time_Change_Menu time_change_menu;
 
 //struct to hold all other structs 
-typedef struct
+/*typedef struct
 {
 	int size;
 	Main_Menu main_menu;
@@ -54,7 +72,7 @@ typedef struct
 	Feed_Amount_Menu feed_amount_menu;
 	Time_Menu time_menu;
 	Time_Change_Menu time_change_menu;
-} Menu_Struct;
+} Menu_Struct;*/
 
 void control_loop(Menu_Struct menu_struct);
 void display_text(char * text[], int, int, int);
