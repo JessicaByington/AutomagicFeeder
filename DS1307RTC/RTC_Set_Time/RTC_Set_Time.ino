@@ -12,8 +12,6 @@ tmElements_t tm;
 
 void setup () 
 {
-  //setTime(hr, min, sec, day, month, yr);
-  //rtc.set(now());
   bool parse = false;
   bool config = false;
 
