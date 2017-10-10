@@ -49,9 +49,9 @@ menu_item_type feed_amount_menu_items[] = {
 
 menu_item_type time_menu_items[] = {
 	{ NULL, "Current: " },
-	{ 4, "Hour" },
-	{ 5, "Minute" },
-	{ 6, "AM/PM" },
+	{ 3, "Hour" },
+	{ 4, "Minute" },
+	{ 5, "AM/PM" },
 	{ -1, "Back" }
 };
 
@@ -146,12 +146,14 @@ int buttonStateUp = 0;        // Initalise ButtonStates
 int buttonStateDown = 0;
 int buttonState;
 int count = 0;            // Temp variable for void demo
+MenuT current = main_menu;
+MenuT prev = main_menu;
 
-						  // constants for indicating whether cursor should be redrawn
+// constants for indicating whether cursor should be redrawn
 #define MOVECURSOR 1 
 #define MOVELIST 2  
 
-						  // Main setup routine
+// Main setup routine
 void setup()
 {
 	MenuT current_menu = main_menu;
@@ -186,16 +188,13 @@ void setup()
 
 void Menu_Select()
 {
-	MenuT current = main_menu;
-	MenuT * prev = &main_menu;
-
 	do
 	{
 		Serial.print("Current before: ");
 		Serial.print(current.menu_num);
 		Serial.print("\n");
 		Serial.print("Prev before: ");
-		Serial.print(prev->menu_num);
+		Serial.print(prev.menu_num);
 		Serial.print("\n");
 
 		current = control_loop(current, prev);
@@ -205,13 +204,13 @@ void Menu_Select()
 		Serial.print(current.menu_num);
 		Serial.print("\n");
 		Serial.print("Prev after: ");
-		Serial.print(prev->menu_num);
+		Serial.print(prev.menu_num);
 		Serial.print("\n");
 
 	} while (true);
 }
 
-struct MenuT control_loop(struct MenuT m_menu, struct MenuT * p_menu)
+struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
 {
 	// If you want your main code to be the menu system then copy the contents of void setup into here
 	// If you do copy void setup copy (then delete) it from the section '// Start Setup Mode if both up and down buttons pressed together' onwards
@@ -299,21 +298,19 @@ struct MenuT control_loop(struct MenuT m_menu, struct MenuT * p_menu)
 			Serial.print(index);
 			Serial.print("\n");
 
-			if ((index >= 0) && (index <= 2))
+			if (index >= 0)
 			{
-				Serial.print("0-2\n");
-				*p_menu = m_menu;
-				return (read_selection(index));
-			}
-			else if ((index >= 3) && (index <= 5))
-			{
-				Serial.print("3-5\n");
+				p_menu = m_menu;
 				return (read_selection(index));
 			}
 			else if (index == -1)
 			{
-				Serial.print("-1\n");
-				return *p_menu;
+				if ((m_menu.menu_num >= 0) && (m_menu.menu_num <= 2))
+				{
+					p_menu = main_menu;
+				}
+
+				return p_menu;
 			}
 			/*else
 			{
