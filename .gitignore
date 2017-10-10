@@ -69,6 +69,11 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
+*.obj
+*.tlog
+*.log
+*.gitignore
+*.gitattributes
 
 # Chutzpah Test files
 _Chutzpah*
