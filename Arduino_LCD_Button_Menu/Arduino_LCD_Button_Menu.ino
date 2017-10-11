@@ -16,6 +16,7 @@ Author:  Commander
 //#include <LiquidCrystal595.h>  
 
 // initialize the interface pins for the LCD
+// rs = 12, en = 11, d4 = 4, d5 = 4, d6 = 3, d7 = 2
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 //LiquidCrystal595 lcd(2,3,4);     // datapin, latchpin, clockpin
 
@@ -41,14 +42,14 @@ menu_item_type main_menu_items[] = {
 };
 
 menu_item_type feed_amount_menu_items[] = {
-  { NULL, "Current: " },
+  { -8, "Current" },
   { -3, "Increase" },
   { -4, "Decrease" },
   { -1, "Back" }
 };
 
 menu_item_type time_menu_items[] = {
-  { NULL, "Current: " },
+  { -9, "Current" },
   { 3, "Hour" },
   { 4, "Minute" },
   { 5, "AM/PM" },
@@ -141,19 +142,23 @@ const int debounceTime = 150;   // this is the debounce and hold delay. Otherwis
 const int buttonUp = 13;      // Set pin for UP Button
 const int buttonDown = 10;      // Set pin for DOWN Button
 const int buttonSelect = 9;     // Set pin for SLELECT Button
-                //const int buttonCancel = 12;    // Set pun for CANCEL Button (No currently used)
 int buttonStateUp = 0;        // Initalise ButtonStates
 int buttonStateDown = 0;
 int buttonState;
 int count = 0;            // Temp variable for void demo
+boolean is_lcd_on;
 MenuT current = main_menu;
 MenuT prev = main_menu;
-  
+
 // constants for indicating whether cursor should be redrawn
 #define MOVECURSOR 1 
 #define MOVELIST 2  
 
-              // Main setup routine
+// constants for the push-button and backlight pins
+#define BUTTON_PIN A2
+#define LCD_LIGHT_PIN A3
+
+// Main setup routine
 void setup()
 {
   MenuT current_menu = main_menu;
@@ -163,20 +168,27 @@ void setup()
   // set up the LCD's number of columns and rows: 
   lcd.begin(totalCols, totalRows);
 
+  //lcd.noDisplay();
+
   // Turn on the LCD Backlight
   //lcd.setLED1Pin(1);      
 
   // initialize the serial communications port:
   Serial.begin(9600);
 
-  // Set Buttons as input for testing whether to enter setup mode
+    // Set Buttons as input for testing whether to enter setup mode
   pinMode(buttonUp, INPUT);
   pinMode(buttonDown, INPUT);
-
+  pinMode(BUTTON_PIN, INPUT);
+  pinMode(LCD_LIGHT_PIN, OUTPUT);
 
   // Read the Button States
   buttonStateUp = digitalRead(buttonUp);
   buttonStateDown = digitalRead(buttonDown);
+
+  // start out with the lcd screen backlight turned on
+  digitalWrite(LCD_LIGHT_PIN, HIGH);
+  is_lcd_on = true;
 
   //End of Void Setup() 
   // Clear LCD on exit from setup routine
@@ -306,89 +318,58 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
       else if (index == -1)
       {
         if ((m_menu.menu_num >= 0) && (m_menu.menu_num <= 2))
-        { 
+        {
           p_menu = main_menu;
         }
 
         return p_menu;
       }
-      /*else
+      else
       {
-      switch (m_menu.mline[index].type)
-      {
-      case -1: // go back to previous menu
-      {
-      return index;
-      }
-      break;
+        switch (index)
+        {
+          case -2: // run test
+          {
+            Test();
+          }
+          break;
 
-      case -2: // run test
-      {
-      Test();
-      }
-      break;
+          case -3: // increase amount of food dispensed
+          {
+            Increase();
+          }
+          break;
 
-      case -3: // increase amount of food dispensed
-      {
-      Increase();
-      }
-      break;
+          case -4: // decrease amount of food dispensed
+          {
+            Decrease();
+          }
+          break;
 
-      case -4: // decrease amount of food dispensed
-      {
-      Decrease();
-      }
-      break;
+          case -5: // change the hour
+          {
+            Hour();
+          }
+          break;
 
-      case -5: // change the hour
-      {
-      Hour();
-      }
-      break;
+          case -6: // change the minute
+          {
+            Minute();
+          }
+          break;
 
-      case -6: // change the minute
-      {
-      Minute();
-      }
-      break;
+          case -7: // change the period
+          {
+            Period();
+          }
+          break;
 
-      case -7: // change the period
-      {
-      Period();
+          default:
+          break;
+        }
       }
-      break;
-
-      default:
-      break;
-      }
-      }
-      */
-      /*switch (topItemDisplayed + cursorPosition) // adding these values together = where on menuItems cursor is.
-      {
-      case 0:  // menu item 1 selected
-      {
-      lcd.clear();
-      lcd.print("Run Item1 code");
-      lcd.setCursor(0, 1);
-      lcd.print("from here");
-      Serial.print("Menu item ");
-      Serial.print(topItemDisplayed + cursorPosition);
-      Serial.print(" selected - ");
-      Serial.println(menuItems[topItemDisplayed + cursorPosition].mtext);
-      delay(2000);
-      stillSelecting = false;
-      }
-      break;
-      }*/
     }
     break;
-
-    //case 8:  //  CANCEL BUTTON PUSHED - Not currently used
-    //{
-    //  stillSelecting = false;
-    //  Serial.println("Button held for a long time");
-    //}
-    //break;
     }
 
     //  checks if menu should be redrawn at all.
@@ -455,32 +436,32 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
 
 void Test()
 {
-
+  Serial.println("Test");
 }
 
 void Increase()
 {
-
+  Serial.println("Increase");
 }
 
 void Decrease()
 {
-
+  Serial.println("Decrease");
 }
 
 void Hour()
 {
-
+  Serial.println("Hour");
 }
 
 void Minute()
 {
-
+  Serial.println("Minute");
 }
 
 void Period()
 {
-
+  Serial.println("AM/PM");
 }
 
 struct MenuT read_selection(int index)
@@ -556,8 +537,24 @@ int read_buttons()
     //  returndata = returndata + 8;
     //  lastButtonPressed = millis();
     //}
+
+    //read LCD toggle button
+    buttonState = digitalRead(BUTTON_PIN);
+    if(buttonState == HIGH)
+    {
+      lastButtonPressed = millis();
+      if (is_lcd_on == true)
+      {
+        digitalWrite(LCD_LIGHT_PIN, LOW);
+        is_lcd_on = false; 
+      }
+      else
+      {
+        digitalWrite(LCD_LIGHT_PIN, HIGH);
+        is_lcd_on = true;
+      }
+    }
   }
 
   return returndata; // this spits back to the function that calls it the variable returndata.
 }
-
