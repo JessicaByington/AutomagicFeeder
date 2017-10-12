@@ -19,6 +19,16 @@ Author:  Commander
 // rs = 12, en = 11, d4 = 4, d5 = 4, d6 = 3, d7 = 2
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
+typedef struct dispenser_config
+{
+  unsigned char am_hour;
+  unsigned char am_minute;
+  unsigned char pm_hour;
+  unsigned char pm_minute;
+  unsigned char amount;
+} user_settings;
+user_settings usr_set;
+
 typedef struct menu_item_def
 {
   int type;
@@ -152,13 +162,20 @@ MenuT prev = main_menu;
 // constants for indicating whether cursor should be redrawn
 #define MOVECURSOR 1 
 #define MOVELIST 2  
-
 // constants for the backlight pin
 #define LCD_LIGHT_PIN A3
+
+// constants for testing time for dispensing
+const int HOUR = 20;
+const int MIN = 20;
 
 // Main setup routine
 void setup()
 {
+  // test user settings 
+  usr_set.pm_hour = HOUR;
+  usr_set.pm_minute = MIN;
+  
   MenuT current_menu = main_menu;
   MenuT prev_menu = main_menu;
 
@@ -427,6 +444,13 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
       //stillSelecting = false;  // tell loop to bail out.
       lcd.noDisplay();
       digitalWrite(LCD_LIGHT_PIN, LOW);
+
+      // check the RTC to see if it is time for food to be dispensed
+      if(CheckTimeLoop())
+      {
+        Dispense();
+      }
+      
     }
     else
     {
@@ -438,9 +462,26 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
   while (stillSelecting == true);
 }
 
-void CheckTime()
+boolean CheckTimeLoop()
 {
-  
+  boolean is_time = false;
+  RTC.read(tm);
+
+  if ((tm.Hour == usr_set.am_hour) || (tm.Hour == usr_set.pm_hour))
+  {
+    if ((tm.Minute == usr_set.am_minute) || (tm.Minute == usr_set.pm_minute))
+      is_time = true;    
+  }
+
+  return is_time;
+}
+
+void Dispense()
+{
+  // dispense food and wait for the minute to be over to continute. 
+  // will block user input for now
+  Serial.println("Dispensing...");
+  delay(60000);
 }
 
 void Test()
