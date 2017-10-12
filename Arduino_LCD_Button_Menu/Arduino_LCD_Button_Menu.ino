@@ -10,15 +10,14 @@ Author:  Commander
 //I use the 3 wire LCD driver using an 74HC595 chip - Very good at saving pins http://www.stephenhobley.com/blog/2011/02/07/controlling-an-lcd-with-just-3-pins/
 // If you use the conventional LiquidCrystal.h comment out the lines with 595 in them and uncomment the conventional ones, of course setting the pin numbers as required
 
-
+#include <Wire.h>
+#include <TimeLib.h>
+#include <DS1307RTC.h>
 // include the library code for the LCD
 #include <LiquidCrystal.h>
-//#include <LiquidCrystal595.h>  
-
 // initialize the interface pins for the LCD
 // rs = 12, en = 11, d4 = 4, d5 = 4, d6 = 3, d7 = 2
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-//LiquidCrystal595 lcd(2,3,4);     // datapin, latchpin, clockpin
 
 typedef struct menu_item_def
 {
@@ -146,7 +145,7 @@ int buttonStateUp = 0;        // Initalise ButtonStates
 int buttonStateDown = 0;
 int buttonState;
 int count = 0;            // Temp variable for void demo
-boolean is_lcd_on;
+tmElements_t tm; // stores time from RTC
 MenuT current = main_menu;
 MenuT prev = main_menu;
 
@@ -154,8 +153,7 @@ MenuT prev = main_menu;
 #define MOVECURSOR 1 
 #define MOVELIST 2  
 
-// constants for the push-button and backlight pins
-#define BUTTON_PIN A2
+// constants for the backlight pin
 #define LCD_LIGHT_PIN A3
 
 // Main setup routine
@@ -179,7 +177,6 @@ void setup()
     // Set Buttons as input for testing whether to enter setup mode
   pinMode(buttonUp, INPUT);
   pinMode(buttonDown, INPUT);
-  pinMode(BUTTON_PIN, INPUT);
   pinMode(LCD_LIGHT_PIN, OUTPUT);
 
   // Read the Button States
@@ -188,7 +185,6 @@ void setup()
 
   // start out with the lcd screen backlight turned on
   digitalWrite(LCD_LIGHT_PIN, HIGH);
-  is_lcd_on = true;
 
   //End of Void Setup() 
   // Clear LCD on exit from setup routine
@@ -262,6 +258,7 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
     // Call read buttons routine which analyzes buttons and gets a response. Default response is 0.  
     switch (read_buttons())
     {
+
       // Case responses depending on what is returned from read buttons routine
     case 1:  // 'UP' BUTTON PUSHED
     {
@@ -427,11 +424,23 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
     if (timeoutTime < millis())
     {
       // user hasn't done anything in awhile
-      stillSelecting = false;  // tell loop to bail out.
+      //stillSelecting = false;  // tell loop to bail out.
+      lcd.noDisplay();
+      digitalWrite(LCD_LIGHT_PIN, LOW);
+    }
+    else
+    {
+      lcd.display();
+      digitalWrite(LCD_LIGHT_PIN, HIGH);
     }
   }
 
   while (stillSelecting == true);
+}
+
+void CheckTime()
+{
+  
 }
 
 void Test()
@@ -529,30 +538,6 @@ int read_buttons()
     {
       returndata = returndata + 4;
       lastButtonPressed = millis();
-    }
-
-    // read Cancel button - Not used at present
-    //buttonState = digitalRead(buttonCancel);
-    //if (buttonState == HIGH){
-    //  returndata = returndata + 8;
-    //  lastButtonPressed = millis();
-    //}
-
-    //read LCD toggle button
-    buttonState = digitalRead(BUTTON_PIN);
-    if(buttonState == HIGH)
-    {
-      lastButtonPressed = millis();
-      if (is_lcd_on == true)
-      {
-        digitalWrite(LCD_LIGHT_PIN, LOW);
-        is_lcd_on = false; 
-      }
-      else
-      {
-        digitalWrite(LCD_LIGHT_PIN, HIGH);
-        is_lcd_on = true;
-      }
     }
   }
 

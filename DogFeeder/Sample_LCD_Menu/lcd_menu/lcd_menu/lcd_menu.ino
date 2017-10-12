@@ -19,19 +19,6 @@ Author:  Commander
 // rs = 12, en = 11, d4 = 4, d5 = 4, d6 = 3, d7 = 2
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-
-typedef struct stored_config
-{
-	unsigned char am_hour;
-	unsigned char am_minute;
-	unsigned char am_second;
-	unsigned char pm_hour;
-	unsigned char pm_minute;
-	unsigned char pm_second;
-	unsigned char amount;
-} user_config;
-user_config m_config;
-
 typedef struct menu_item_def
 {
 	int type;
@@ -158,7 +145,7 @@ int buttonStateUp = 0;        // Initalise ButtonStates
 int buttonStateDown = 0;
 int buttonState;
 int count = 0;            // Temp variable for void demo
-boolean is_lcd_on;
+tmElements_t tm; // stores time from RTC
 MenuT current = main_menu;
 MenuT prev = main_menu;
 
@@ -166,8 +153,7 @@ MenuT prev = main_menu;
 #define MOVECURSOR 1 
 #define MOVELIST 2  
 
-// constants for the push-button and backlight pins
-#define BUTTON_PIN A2
+// constants for the backlight pin
 #define LCD_LIGHT_PIN A3
 
 // Main setup routine
@@ -191,7 +177,6 @@ void setup()
 	// Set Buttons as input for testing whether to enter setup mode
 	pinMode(buttonUp, INPUT);
 	pinMode(buttonDown, INPUT);
-	pinMode(BUTTON_PIN, INPUT);
 	pinMode(LCD_LIGHT_PIN, OUTPUT);
 
 	// Read the Button States
@@ -200,7 +185,6 @@ void setup()
 
 	// start out with the lcd screen backlight turned on
 	digitalWrite(LCD_LIGHT_PIN, HIGH);
-	is_lcd_on = true;
 
 	//End of Void Setup() 
 	// Clear LCD on exit from setup routine
@@ -274,6 +258,7 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
 		// Call read buttons routine which analyzes buttons and gets a response. Default response is 0.  
 		switch (read_buttons())
 		{
+
 			// Case responses depending on what is returned from read buttons routine
 		case 1:  // 'UP' BUTTON PUSHED
 		{
@@ -439,11 +424,23 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
 		if (timeoutTime < millis())
 		{
 			// user hasn't done anything in awhile
-			stillSelecting = false;  // tell loop to bail out.
+			//stillSelecting = false;  // tell loop to bail out.
+			lcd.noDisplay();
+			digitalWrite(LCD_LIGHT_PIN, LOW);
+		}
+		else
+		{
+			lcd.display();
+			digitalWrite(LCD_LIGHT_PIN, HIGH);
 		}
 	}
 
 	while (stillSelecting == true);
+}
+
+void CheckTime()
+{
+
 }
 
 void Test()
@@ -541,30 +538,6 @@ int read_buttons()
 		{
 			returndata = returndata + 4;
 			lastButtonPressed = millis();
-		}
-
-		// read Cancel button - Not used at present
-		//buttonState = digitalRead(buttonCancel);
-		//if (buttonState == HIGH){
-		//  returndata = returndata + 8;
-		//  lastButtonPressed = millis();
-		//}
-
-		//read LCD toggle button
-		buttonState = digitalRead(BUTTON_PIN);
-		if (buttonState == HIGH)
-		{
-			lastButtonPressed = millis();
-			if (is_lcd_on == true)
-			{
-				digitalWrite(LCD_LIGHT_PIN, LOW);
-				is_lcd_on = false;
-			}
-			else
-			{
-				digitalWrite(LCD_LIGHT_PIN, HIGH);
-				is_lcd_on = true;
-			}
 		}
 	}
 
