@@ -12,7 +12,7 @@ typedef struct
 {
   long alarm;
   int mode;
-
+} c;
 c test;
 c ttest;
 

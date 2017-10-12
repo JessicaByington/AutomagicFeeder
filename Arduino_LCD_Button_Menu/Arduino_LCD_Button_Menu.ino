@@ -1,20 +1,17 @@
 /*
 Name:    lcd_menu.ino
 Created: 10/5/2017 2:42:26 PM
-Author:  Commander
+Author:  Jessica
 */
 
-
-/// Adaption of rkflyer's Adaptaion of the Simple LCD menu system writen by PolePole - Arduino forums
-
-//I use the 3 wire LCD driver using an 74HC595 chip - Very good at saving pins http://www.stephenhobley.com/blog/2011/02/07/controlling-an-lcd-with-just-3-pins/
-// If you use the conventional LiquidCrystal.h comment out the lines with 595 in them and uncomment the conventional ones, of course setting the pin numbers as required
+// Adaption of rkflyer's Adaptaion of the Simple LCD menu system writen by PolePole - Arduino forums
 
 #include <Wire.h>
 #include <TimeLib.h>
 #include <DS1307RTC.h>
 // include the library code for the LCD
 #include <LiquidCrystal.h>
+#include "EEPROMAnything.h";
 // initialize the interface pins for the LCD
 // rs = 12, en = 11, d4 = 4, d5 = 4, d6 = 3, d7 = 2
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
@@ -61,23 +58,34 @@ menu_item_type time_menu_items[] = {
   { -9, "Current" },
   { 3, "Hour" },
   { 4, "Minute" },
-  { 5, "AM/PM" },
   { -1, "Back" }
 };
 
 menu_item_type hour_menu_items[] = {
-  { -5, "1" },
-  { -5, "2" },
-  { -5, "3" },
-  { -5, "4" },
-  { -5, "5" },
-  { -5, "6" },
-  { -5, "7" },
-  { -5, "8" },
-  { -5, "9" },
+  { -5, "00" },
+  { -5, "01" },
+  { -5, "02" },
+  { -5, "03" },
+  { -5, "04" },
+  { -5, "05" },
+  { -5, "06" },
+  { -5, "07" },
+  { -5, "08" },
+  { -5, "09" },
   { -5, "10" },
   { -5, "11" },
   { -5, "12" },
+  { -5, "13" },
+  { -5, "14" },
+  { -5, "15" },
+  { -5, "16" },
+  { -5, "17" },
+  { -5, "18" },
+  { -5, "19" },
+  { -5, "20" },
+  { -5, "21" },
+  { -5, "22" },
+  { -5, "23" },
   { -1, "Back" }
 };
 
@@ -97,12 +105,6 @@ menu_item_type minute_menu_items[] = {
   { -1, "Back" }
 };
 
-menu_item_type period_menu_items[] = {
-  { -7, "AM" },
-  { -7, "PM" },
-  { -1, "Back" }
-};
-
 struct MenuT main_menu = {
   0,
   5,
@@ -117,13 +119,13 @@ struct MenuT feed_menu = {
 
 struct MenuT time_menu = {
   1,
-  5,
+  4,
   time_menu_items
 };
 
 struct MenuT hour_menu = {
   3,
-  13,
+  25,
   hour_menu_items
 };
 
@@ -133,14 +135,7 @@ struct MenuT minute_menu = {
   minute_menu_items
 };
 
-struct MenuT period_menu = {
-  5,
-  3,
-  period_menu_items
-};
-
 //Define Various Variables used throughout
-int timer = 0;
 byte totalRows = 2;         // total rows of LCD
 byte totalCols = 16;        // total columns of LCD
 int returndata = 0;         // Used for return of button presses
@@ -154,10 +149,10 @@ const int buttonSelect = 9;     // Set pin for SLELECT Button
 int buttonStateUp = 0;        // Initalise ButtonStates
 int buttonStateDown = 0;
 int buttonState;
-int count = 0;            // Temp variable for void demo
-tmElements_t tm; // stores time from RTC
-MenuT current = main_menu;
-MenuT prev = main_menu;
+tmElements_t tm;          // stores time from RTC
+MenuT current = main_menu;      // keeps track of which menu is currently being displayed
+MenuT prev = main_menu;       // remembers the last menu that was displayed so it can return to it
+boolean feed_or_system_time = false;
 
 // constants for indicating whether cursor should be redrawn
 #define MOVECURSOR 1 
@@ -172,26 +167,21 @@ const int MIN = 20;
 // Main setup routine
 void setup()
 {
-  // test user settings 
-  usr_set.pm_hour = HOUR;
-  usr_set.pm_minute = MIN;
-  
+  // read stored user settings from EEPROM
+  EEPROM_readAnything(0, usr_set);
+
+  // Start the display with the main menu 
   MenuT current_menu = main_menu;
   MenuT prev_menu = main_menu;
 
   // Setup stuff that needs to be done regardless of whether entering setup mode or not
   // set up the LCD's number of columns and rows: 
-  lcd.begin(totalCols, totalRows);
-
-  //lcd.noDisplay();
-
-  // Turn on the LCD Backlight
-  //lcd.setLED1Pin(1);      
+  lcd.begin(totalCols, totalRows); 
 
   // initialize the serial communications port:
   Serial.begin(9600);
 
-    // Set Buttons as input for testing whether to enter setup mode
+  // Set Buttons as input for testing whether to enter setup mode
   pinMode(buttonUp, INPUT);
   pinMode(buttonDown, INPUT);
   pinMode(LCD_LIGHT_PIN, OUTPUT);
@@ -203,7 +193,6 @@ void setup()
   // start out with the lcd screen backlight turned on
   digitalWrite(LCD_LIGHT_PIN, HIGH);
 
-  //End of Void Setup() 
   // Clear LCD on exit from setup routine
   lcd.clear();
 
@@ -215,35 +204,13 @@ void Menu_Select()
 {
   do
   {
-    Serial.print("Current before: ");
-    Serial.print(current.menu_num);
-    Serial.print("\n");
-    Serial.print("Prev before: ");
-    Serial.print(prev.menu_num);
-    Serial.print("\n");
-
     current = control_loop(current, prev);
-    delay(500);
-
-    Serial.print("Current after: ");
-    Serial.print(current.menu_num);
-    Serial.print("\n");
-    Serial.print("Prev after: ");
-    Serial.print(prev.menu_num);
-    Serial.print("\n");
-
+    delay(500); /// not sure I need this
   } while (true);
 }
 
 struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
 {
-  // If you want your main code to be the menu system then copy the contents of void setup into here
-  // If you do copy void setup copy (then delete) it from the section '// Start Setup Mode if both up and down buttons pressed together' onwards
-  // Delete the line      'if (buttonStateUp == HIGH && buttonStateDown == HIGH) { '
-  // Also make sure you delete the last '}' from the end of the void setup, Labeled 'End of Start Setup mode if'
-  // When your routine runs it will now go straight into the main menu function
-  // Start Setup Mode if both up and down buttons pressed together
-
   byte topItemDisplayed = 0;  // stores menu item displayed at top of LCD screen
   byte cursorPosition = 0;  // where cursor is on screen, from 0 --> totalRows. 
 
@@ -254,7 +221,7 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
   byte i = 0;         // temp variable for loops.
   byte totalMenuItems = 0;    // a while loop below will set this to the # of menu items.
 
-                // Get list of Menu Items
+  // Get list of Menu Items
   menu_item_type * menuItems = m_menu.mline;
   // store how many items are in the list
   totalMenuItems = m_menu.num_items - 1;
@@ -265,7 +232,7 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
 
   timeoutTime = millis() + menuTimeout; // set initial timeout limit. 
 
-                      // Run a loop while waiting for user to select menu option.
+  // Run a loop while waiting for user to select menu option.
   do
   {
     // Call any other setup actions required and/or process anything else required whilst in 
@@ -275,167 +242,163 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
     // Call read buttons routine which analyzes buttons and gets a response. Default response is 0.  
     switch (read_buttons())
     {
-
       // Case responses depending on what is returned from read buttons routine
-    case 1:  // 'UP' BUTTON PUSHED
-    {
-      timeoutTime = millis() + menuTimeout;  // reset timeout timer
-                           //  if cursor is at top and menu is NOT at top
-                           //  move menu up one.
-      if (cursorPosition == 0 && topItemDisplayed > 0)  //  Cursor is at top of LCD, and there are higher menu items still to be displayed.
+      case 1:  // 'UP' BUTTON PUSHED
       {
-        topItemDisplayed--;  // move top menu item displayed up one. 
-        redraw = MOVELIST;  // redraw the entire menu
-      }
-
-      // if cursor not at top, move it up one.
-      if (cursorPosition > 0)
-      {
-        cursorPosition--;  // move cursor up one.
-        redraw = MOVECURSOR;  // redraw just cursor.
-      }
-    }
-    break;
-
-    case 2:    // 'DOWN' BUTTON PUSHED
-    {
-      timeoutTime = millis() + menuTimeout;  // reset timeout timer
-                           // this sees if there are menu items below the bottom of the LCD screen & sees if cursor is at bottom of LCD 
-      if ((topItemDisplayed + (totalRows - 1)) < totalMenuItems && cursorPosition == (totalRows - 1))
-      {
-        topItemDisplayed++;  // move menu down one
-        redraw = MOVELIST;  // redraw entire menu
-      }
-
-      if (cursorPosition < (totalRows - 1))  // cursor is not at bottom of LCD, so move it down one.
-      {
-        cursorPosition++;  // move cursor down one
-        redraw = MOVECURSOR;  // redraw just cursor.
-      }
-    }
-    break;
-
-    case 4:  // SELECT BUTTON PUSHED
-    {
-      timeoutTime = millis() + menuTimeout;  // reset timeout timer
-      int index = m_menu.mline[topItemDisplayed + cursorPosition].type;
-
-      Serial.print("Index: ");
-      Serial.print(index);
-      Serial.print("\n");
-
-      if (index >= 0)
-      {
-        p_menu = m_menu;
-        return (read_selection(index));
-      }
-      else if (index == -1)
-      {
-        if ((m_menu.menu_num >= 0) && (m_menu.menu_num <= 2))
+        timeoutTime = millis() + menuTimeout;  // reset timeout timer
+                             //  if cursor is at top and menu is NOT at top
+                             //  move menu up one.
+        if (cursorPosition == 0 && topItemDisplayed > 0)  //  Cursor is at top of LCD, and there are higher menu items still to be displayed.
         {
-          p_menu = main_menu;
+          topItemDisplayed--;  // move top menu item displayed up one. 
+          redraw = MOVELIST;  // redraw the entire menu
         }
 
-        return p_menu;
-      }
-      else
-      {
-        switch (index)
+        // if cursor not at top, move it up one.
+        if (cursorPosition > 0)
         {
-          case -2: // run test
-          {
-            Test();
-          }
-          break;
-
-          case -3: // increase amount of food dispensed
-          {
-            Increase();
-          }
-          break;
-
-          case -4: // decrease amount of food dispensed
-          {
-            Decrease();
-          }
-          break;
-
-          case -5: // change the hour
-          {
-            Hour();
-          }
-          break;
-
-          case -6: // change the minute
-          {
-            Minute();
-          }
-          break;
-
-          case -7: // change the period
-          {
-            Period();
-          }
-          break;
-
-          default:
-          break;
+          cursorPosition--;  // move cursor up one.
+          redraw = MOVECURSOR;  // redraw just cursor.
         }
       }
-    }
-    break;
+      break;
+
+      case 2:    // 'DOWN' BUTTON PUSHED
+      {
+        timeoutTime = millis() + menuTimeout;  // reset timeout timer
+                             // this sees if there are menu items below the bottom of the LCD screen & sees if cursor is at bottom of LCD 
+        if ((topItemDisplayed + (totalRows - 1)) < totalMenuItems && cursorPosition == (totalRows - 1))
+        {
+          topItemDisplayed++;  // move menu down one
+          redraw = MOVELIST;  // redraw entire menu
+        }
+
+        if (cursorPosition < (totalRows - 1))  // cursor is not at bottom of LCD, so move it down one.
+        {
+          cursorPosition++;  // move cursor down one
+          redraw = MOVECURSOR;  // redraw just cursor.
+        }
+      }
+      break;
+
+      case 4:  // SELECT BUTTON PUSHED
+      {
+        timeoutTime = millis() + menuTimeout;  // reset timeout timer
+        int menu_pos = topItemDisplayed + cursorPosition;
+        int index = m_menu.mline[menu_pos].type;
+
+        if (m_menu.mline[menu_pos].mtext == "Feed Time")
+          feed_or_system_time = true;
+        else if (m_menu.mline[menu_pos].mtext == "System Time")
+          feed_or_system_time = false;       
+
+        if (index >= 0)
+        {
+          p_menu = m_menu;
+          return (read_selection(index));
+        }
+        else if (index == -1)
+        {
+          if ((m_menu.menu_num >= 0) && (m_menu.menu_num <= 2))
+          {
+            p_menu = main_menu;
+          }
+
+          return p_menu;
+        }
+        else
+        {
+          switch (index)
+          {
+            case -2: // run test
+            {
+              Test();
+            }
+            break;
+
+            case -3: // increase amount of food dispensed
+            {
+              Increase();
+            }
+            break;
+
+            case -4: // decrease amount of food dispensed
+            {
+              Decrease();
+            }
+            break;
+
+            case -5: // change the hour
+            {
+              
+              Hour(menu_pos, m_menu.mline[menu_pos].mtext);
+            }
+            break;
+
+            case -6: // change the minute
+            {
+              Minute();
+            }
+            break;
+
+            default:
+            break;
+          }
+        }
+      }
+      break;
     }
 
     //  checks if menu should be redrawn at all.
     switch (redraw)
     {
       // Only the cursor needs to be moved.
-    case MOVECURSOR:
-    {
-      redraw = false;             // reset flag.
-      if (cursorPosition > totalMenuItems)  // keeps cursor from moving beyond menu items.
-        cursorPosition = totalMenuItems;
-      for (i = 0; i < (totalRows); i++)
+      case MOVECURSOR:
       {
-        // loop through all of the lines on the LCD
-        lcd.setCursor(0, i);
-        lcd.print(" ");           // and erase the previously displayed cursor
-        lcd.setCursor((totalCols - 1), i);
-        lcd.print(" ");
-      }
-
-      lcd.setCursor(0, cursorPosition);   // go to LCD line where new cursor should be & 
-                        // display it.
-      lcd.print(">");
-    }
-    break;
-
-    // the entire menu needs to be redrawn
-    case MOVELIST:
-    {
-      redraw = MOVECURSOR;  // redraw cursor after clearing LCD and printing menu.
-      lcd.clear();      // clear screen so it can be repainted.
-
-      if (totalMenuItems > ((totalRows - 1)))
-      {
-        // if there are more menu items than LCD rows, then cycle through menu items.
+        redraw = false;             // reset flag.
+        if (cursorPosition > totalMenuItems)  // keeps cursor from moving beyond menu items.
+          cursorPosition = totalMenuItems;
         for (i = 0; i < (totalRows); i++)
         {
-          lcd.setCursor(1, i);
-          lcd.print(menuItems[topItemDisplayed + i].mtext);
+          // loop through all of the lines on the LCD
+          lcd.setCursor(0, i);
+          lcd.print(" ");           // and erase the previously displayed cursor
+          lcd.setCursor((totalCols - 1), i);
+          lcd.print(" ");
         }
+
+        lcd.setCursor(0, cursorPosition);   // go to LCD line where new cursor should be & 
+                          // display it.
+        lcd.print(">");
       }
-      else
+      break;
+
+      // the entire menu needs to be redrawn
+      case MOVELIST:
       {
-        // if menu has less items than LCD rows, display all available menu items.
-        for (i = 0; i < totalMenuItems + 1; i++)
+        redraw = MOVECURSOR;  // redraw cursor after clearing LCD and printing menu.
+        lcd.clear();      // clear screen so it can be repainted.
+
+        if (totalMenuItems > ((totalRows - 1)))
         {
-          lcd.setCursor(1, i);
-          lcd.print(menuItems[topItemDisplayed + i].mtext);
+          // if there are more menu items than LCD rows, then cycle through menu items.
+          for (i = 0; i < (totalRows); i++)
+          {
+            lcd.setCursor(1, i);
+            lcd.print(menuItems[topItemDisplayed + i].mtext);
+          }
+        }
+        else
+        {
+          // if menu has less items than LCD rows, display all available menu items.
+          for (i = 0; i < totalMenuItems + 1; i++)
+          {
+            lcd.setCursor(1, i);
+            lcd.print(menuItems[topItemDisplayed + i].mtext);
+          }
         }
       }
-    }
-    break;
+      break;
     }
 
     if (timeoutTime < millis())
@@ -446,11 +409,11 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
       digitalWrite(LCD_LIGHT_PIN, LOW);
 
       // check the RTC to see if it is time for food to be dispensed
-      if(CheckTimeLoop())
+      if (CheckTimeLoop())
       {
         Dispense();
       }
-      
+
     }
     else
     {
@@ -470,7 +433,7 @@ boolean CheckTimeLoop()
   if ((tm.Hour == usr_set.am_hour) || (tm.Hour == usr_set.pm_hour))
   {
     if ((tm.Minute == usr_set.am_minute) || (tm.Minute == usr_set.pm_minute))
-      is_time = true;    
+      is_time = true;
   }
 
   return is_time;
@@ -499,19 +462,41 @@ void Decrease()
   Serial.println("Decrease");
 }
 
-void Hour()
+void Hour(int index, char * title)
 {
-  Serial.println("Hour");
+  Serial.println(title);
+  unsigned char m_hour = index + 1;
+
+  if ((feed_or_system_time == true) && ((index < 12) && (index >=0)))
+  {
+    // am time change
+    usr_set.am_hour = m_hour;
+    Serial.print("am hour: ");
+    Serial.println(m_hour);
+  }
+  else if ((feed_or_system_time == true) && ((index >= 12) && (index <= 23)))
+  {
+    // pm time change
+    usr_set.pm_hour = m_hour;
+    Serial.print("am hour: ");
+    Serial.println(m_hour);
+  }
+  else
+  {
+    // system time change
+  }
+  
+  EEPROM_writeAnything(0, usr_set);
+  Serial.print("hours wrote to mem: ");
+  Serial.println(usr_set.am_hour);
+  Serial.println(usr_set.pm_hour);
+
+  delay(1000); // try to prevent changing hour more than once by accident
 }
 
 void Minute()
 {
   Serial.println("Minute");
-}
-
-void Period()
-{
-  Serial.println("AM/PM");
 }
 
 struct MenuT read_selection(int index)
@@ -537,10 +522,6 @@ struct MenuT read_selection(int index)
   else if (index == 4)
   {
     returndata = minute_menu;
-  }
-  else if (index == 5)
-  {
-    returndata = period_menu;
   }
 
   return returndata;
