@@ -11,6 +11,7 @@ Author:  Jessica
 #include <DS1307RTC.h>
 // include the library code for the LCD
 #include <LiquidCrystal.h>
+#include <stdlib.h>
 #include "EEPROMAnything.h";
 // initialize the interface pins for the LCD
 // rs = 12, en = 11, d4 = 4, d5 = 4, d6 = 3, d7 = 2
@@ -48,14 +49,14 @@ menu_item_type main_menu_items[] = {
 };
 
 menu_item_type feed_amount_menu_items[] = {
-  { -8, "Current" },
+  { -7, "Current" },
   { -3, "Increase" },
   { -4, "Decrease" },
   { -1, "Back" }
 };
 
 menu_item_type time_menu_items[] = {
-  { -9, "Current" },
+  { -8, "Current" },
   { 3, "Hour" },
   { 4, "Minute" },
   { -1, "Back" }
@@ -150,9 +151,11 @@ int buttonStateUp = 0;        // Initalise ButtonStates
 int buttonStateDown = 0;
 int buttonState;
 tmElements_t tm;          // stores time from RTC
+
 MenuT current = main_menu;      // keeps track of which menu is currently being displayed
 MenuT prev = main_menu;       // remembers the last menu that was displayed so it can return to it
 boolean feed_or_system_time = false;
+boolean am_or_pm = false;
 
 // constants for indicating whether cursor should be redrawn
 #define MOVECURSOR 1 
@@ -167,6 +170,8 @@ const int MIN = 20;
 // Main setup routine
 void setup()
 {
+
+  
   // read stored user settings from EEPROM
   EEPROM_readAnything(0, usr_set);
 
@@ -287,6 +292,8 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
         int menu_pos = topItemDisplayed + cursorPosition;
         int index = m_menu.mline[menu_pos].type;
 
+        Serial.println(index);
+
         if (m_menu.mline[menu_pos].mtext == "Feed Time")
           feed_or_system_time = true;
         else if (m_menu.mline[menu_pos].mtext == "System Time")
@@ -331,13 +338,28 @@ struct MenuT control_loop(MenuT m_menu, MenuT & p_menu)
             case -5: // change the hour
             {
               
-              Hour(menu_pos, m_menu.mline[menu_pos].mtext);
+              Hour(m_menu.mline[menu_pos].mtext);
             }
             break;
 
             case -6: // change the minute
             {
-              Minute();
+              // pass in the text value that is displayed on the screen
+              Minute(m_menu.mline[menu_pos].mtext);
+            }
+            break;
+
+            case -7: // Display feed amount
+            {
+              Serial.println("Display Feed Amount");
+              DisplayFeedAmount();
+            }
+            break;
+
+            case -8: // Display feed/system time
+            {
+              Serial.println("Display Feed/System Time");
+              DisplayTime();
             }
             break;
 
@@ -462,41 +484,142 @@ void Decrease()
   Serial.println("Decrease");
 }
 
-void Hour(int index, char * title)
+void Hour(char * c_hour)
 {
-  Serial.println(title);
-  unsigned char m_hour = index + 1;
+  unsigned char m_hour = atoi(c_hour);
 
-  if ((feed_or_system_time == true) && ((index < 12) && (index >=0)))
+  if (feed_or_system_time == true)
   {
-    // am time change
-    usr_set.am_hour = m_hour;
-    Serial.print("am hour: ");
-    Serial.println(m_hour);
-  }
-  else if ((feed_or_system_time == true) && ((index >= 12) && (index <= 23)))
-  {
-    // pm time change
-    usr_set.pm_hour = m_hour;
-    Serial.print("am hour: ");
-    Serial.println(m_hour);
+    if ((m_hour < 12) && (m_hour >=0))
+    {
+      // am time change
+      usr_set.am_hour = m_hour;
+      am_or_pm = true;
+    }
+    else if ((m_hour >= 12) && (m_hour <= 23))
+    {
+      // pm time change
+      usr_set.pm_hour = m_hour;
+      am_or_pm = false;
+    }
   }
   else
   {
+    RTC.read(tm);   // reads the clock time
     // system time change
+    tm.Hour = m_hour;
+    RTC.write(tm); // writes and updates the clock time
   }
   
-  EEPROM_writeAnything(0, usr_set);
-  Serial.print("hours wrote to mem: ");
-  Serial.println(usr_set.am_hour);
-  Serial.println(usr_set.pm_hour);
-
-  delay(1000); // try to prevent changing hour more than once by accident
+  EEPROM_writeAnything(0, usr_set); // update changes in EEPROM
+  
+  delay(1000); // prevents changing hour more than once by accident
 }
 
-void Minute()
+void Minute(char * c_min)
 {
-  Serial.println("Minute");
+  unsigned char m_min = atoi("00");
+  Serial.println(m_min);
+
+  if (feed_or_system_time == true)
+  {
+    if (am_or_pm == true)
+    {
+      // am time change
+      usr_set.am_minute = m_min;
+    }
+    else if (am_or_pm == false)
+    {
+      // pm time change
+      usr_set.pm_minute = m_min;
+    }
+  }
+  else
+  {
+    RTC.read(tm);   // reads the clock time
+    // system time change
+    tm.Minute = m_min;
+    RTC.write(tm); // writes and updates the clock time
+  }
+  
+  EEPROM_writeAnything(0, usr_set); // update changes in EEPROM
+
+  Serial.println(m_min);
+  
+  delay(1000); // prevents changing hour more than once by accident
+}
+
+void DisplayTime()
+{
+  /* 
+   *  if feed time, show both feed times, and then return to menu
+   *  if system time, show system time and then return to menu
+   */
+  if (feed_or_system_time == true)
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    
+    if (usr_set.am_hour < 10)
+    {
+      lcd.print(0);
+      lcd.setCursor(1, 0);
+    }
+    lcd.print(usr_set.am_hour);
+    
+    lcd.setCursor(2, 0);
+    lcd.print(":");
+    lcd.setCursor(3, 0);
+
+    if (usr_set.am_minute < 10)
+    {
+      lcd.print(0);
+      lcd.setCursor(4, 0);
+    }
+    lcd.print(usr_set.am_minute);
+
+    lcd.setCursor(0, 1);
+    if (usr_set.pm_hour < 10)
+    {
+      lcd.print(0);
+      lcd.setCursor(1, 1);
+    }
+    lcd.print(usr_set.pm_hour);
+    lcd.setCursor(2, 1);
+    lcd.print(":");
+    lcd.setCursor(3, 1);
+
+    if (usr_set.am_minute < 10)
+    {
+      lcd.print(0);
+      lcd.setCursor(4, 1);
+    }
+    lcd.print(usr_set.pm_minute);
+    
+    delay(6000);
+    lcd.clear();
+  }
+  else
+  {
+    RTC.read(tm);   // reads the clock time
+    // system time change
+
+
+    lcd.setCursor(0, 0);
+    lcd.print(tm.Hour);
+    lcd.setCursor(0, 2);
+    lcd.write(':');
+    lcd.setCursor(0, 3);
+    lcd.print(tm.Minute);
+    
+    delay(6000);
+    lcd.clear();
+  }
+}
+
+void DisplayFeedAmount()
+{
+  
 }
 
 struct MenuT read_selection(int index)
